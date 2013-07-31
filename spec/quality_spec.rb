@@ -5,6 +5,18 @@ if defined?(Encoding) && Encoding.default_external != "UTF-8"
 end
 
 describe "The library itself" do
+  def check_that_newgem_templates_use_require_relative(filename)
+    failing_lines = []
+
+    File.readlines(filename).each_with_index do |line,number|
+      failing_lines << number + 1 if line =~ /^ *(require )('|")(<%=)/
+    end
+
+    unless failing_lines.empty?
+      "#{filename} should use relative requisition on lines #{failing_lines.join(', ')}"
+    end
+  end
+
   def check_for_spec_defs_with_single_quotes(filename)
     failing_lines = []
 
@@ -49,6 +61,18 @@ describe "The library itself" do
     match do |actual|
       actual.empty?
     end
+  end
+
+  it "has a newgem template that uses require_relative where appropriate" do
+    error_messages = []
+
+    Dir.chdir(File.expand_path("../../lib/bundler/templates/newgem/lib", __FILE__)) do
+      `git ls-files`.split("\n").each do |filename|
+        error_messages << check_that_newgem_templates_use_require_relative(filename)
+      end
+    end
+
+    expect(error_messages.compact).to be_well_formed
   end
 
   it "has no malformed whitespace" do
